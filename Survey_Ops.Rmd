@@ -1,0 +1,128 @@
+---
+title: "BPI_"
+author: "R. Schultz"
+date: "2024-10-14"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+#install package used to read in SAV data
+library(dplyr)
+library(ggplot2)
+library(readr)
+```
+
+```{r}
+#load in shared data 
+library(readr)
+SO_SKILL_Data <- read_csv("SO_SKILL_Data.csv")
+head(SO_SKILL_Data)
+```
+
+```{r}
+#create new DF with a shorter name and to not overwrite original data
+survey <-SO_SKILL_Data
+```
+
+```{r}
+#Table demographic variables from survey data
+
+#Table Income data
+income_dist <- survey %>% group_by(INCOME) %>% 
+  summarise(count = n()) %>% 
+  mutate(percentage = count / sum(count) * 100) 
+
+#If we wanted to plot
+ggplot(income_dist, aes(x = INCOME, y = percentage)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + labs(title = "Income Distribution", x = "Income Range", y = "Percentage")
+
+#Could consider grouping and making larger bands of income
+```
+```{r}
+#Table Education Distribution
+edu_dist <- survey %>% group_by(EDU) %>% 
+  summarise(count = n()) %>% mutate(percentage = count / sum(count) * 100)
+
+#if we wanted to plot
+ggplot(edu_dist, aes(x = EDU, y = percentage)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + labs(title = "Education Distribution", x = "Education Level", y = "Percentage")
+```
+```{r}
+#Calculate AGE =(2024 - (AGE))
+#Adding a new column with AGE calculated
+library(lubridate)
+current_year <-year(Sys.Date())
+survey$Age <-current_year - survey$AGE
+
+
+#Table Age Data
+survey$Age <- as.numeric(survey$Age) 
+age_dist <- survey %>% 
+  group_by(Age) %>% 
+  summarise(count = n()) %>% 
+  mutate(percentage = count / sum(count) * 100) 
+
+#Remove respondents RID ex 2,4,5,6 as these all fall under 18 yrs old
+
+#Age is continous - we could recode and group these as categorical
+```
+
+```{r}
+#Table Race Data
+race_dist <- survey %>% group_by(RACE) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = count / sum(count) * 100) 
+```
+
+```{r}
+#Summarize LOI to consider a time cut-off
+survey$LOI <-as.numeric(survey$LOI)
+summary(survey$LOI)
+```
+
+```{r}
+# Set threshold under 300 for LOI
+threshhold <- 300
+
+# Create DF that removes obs (cases) where LOI is under 301
+survey_filtered <- survey[survey$LOI <301,]
+print(survey_filtered)
+```
+
+
+
+------ # Do Not run below ----- 
+```{r}
+#modify demographic columns to only include last two digits to match code in survey response categories. 
+survey$MARSTA <- substr(survey$MARSTA, nchar(survey$MARSTA)-1, nchar(survey$MARSTA))
+survey$GENDER <- substr(survey$GENDER, nchar(survey$GENDER)-1, nchar(survey$GENDER))
+survey$RACE <- substr(survey$RACE, nchar(survey$RACE)-1, nchar(survey$RACE))
+survey$EDU <- substr(survey$EDU, nchar(survey$EDU)-1, nchar(survey$EDU))
+survey$INCOME <- substr(survey$INCOME, nchar(survey$INCOME)-1, nchar(survey$INCOME))
+```
+
+```{r}
+#Re-table demographic data (Marriage, Gender, Race, Education and Income)
+table(survey$MARSTA)
+table(survey$GENDER)
+table(survey$RACE)
+table(survey$EDU)
+table(survey$INCOME)
+```
+```{r}
+survey$LOI <-as.numeric(survey$LOI)
+summary(survey$LOI)
+```
+
+```{r}
+sort(colnames(survey))
+```
+```{r}
+rmarkdown::render("Survey_Ops.Rmd", 
+                  output_file = "Survey_Ops_BPI.docx"
+                 )
+```
+
+
+
